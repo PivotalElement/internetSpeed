@@ -1,0 +1,105 @@
+internetSpeed Analysis
+========================================================
+Load the required packages, set the proper working directory and load the data as data_raw data frame (never change anything on the data)
+```{r, echo=FALSE}
+rm(list=ls())
+require(xlsx)
+```
+Import Data set
+```{r}
+dsl <- read.xlsx2(file='DSLSpeedTestData.xlsx', sheetIndex = 1, colClasses = NA)
+```
+Remove all NA's and convert the Date to the right format
+```{r}
+dsl <- dsl[complete.cases(dsl),]          #delete the rows with NA
+dsl$Date <- as.Date(dsl$Date, "%d.%m.%Y") #convert Data factor -> Date
+```
+Summary of the data set
+```{r}
+summary(dsl)
+```
+Plot daily summary
+```{r}
+boxplot(dsl$Download ~ dsl$Date, ylab="Download Speed (Mbps)")
+```
+Functions that create the graphs
+```{r}
+createText <- function(txt){
+  if(is.vector(txt)){return(paste0(txt, collapse='\n'))}
+  else {return('text missing')}}
+
+viewDownload <- function(data){
+  xScale <- c(0,20)
+  xBreaks <- seq(0,20, by=0.2)
+  b <- hist(data$Download, breaks = xBreaks)
+  yCeiling <- ceiling(max(b$counts)/10)*10
+  yScale <- c(0,yCeiling)
+  # plot 
+  plot(b, xlim = xScale, ylim = yScale, main='', col='magenta',
+       axes=FALSE, xlab="", ylab="", border='white')
+  
+  # yAxis
+  axis(2, las=1, cex.axis=0.8, lwd.ticks=0.5, col.ticks='black', lwd=0, tck=-0.025,
+     at= seq(from = 0, to = yCeiling, by = 10))
+  mtext('count', side=2, line=2, adj=1, cex=.8)
+  
+  # xAxis
+  axis(1, las=1, cex.axis=0.8, lwd.ticks=0.6, col.ticks='black', lwd = 1,
+     at=seq(from = 0, to = 20, by=2))
+  mtext('download speed in Mbit/s', side=1, line=2, adj=0.5, cex=.8)
+  
+  # Median and max
+  lines(x = c(max(data$Download),max(data$Download)), 
+        y = yScale, col='red', lty=2)
+  text(x = max(data$Download),y = yCeiling, pos = 4, cex=.7, xpd = T, 
+       labels = createText(c(' ','max',max(data$Download))))
+  lines(x = c(median(data$Download),median(data$Download)), 
+        y = yScale, col='red', lty=2)
+  text(x = median(data$Download), y = yCeiling, pos = 4, cex=.7 ,xpd = T,
+       labels = createText(c(' ','median', median(data$Download))))
+  lines(x = c(max(data$SpecDownload), max(data$SpecDownload)), 
+        y = yScale, col='blue', lty=2)
+  text(x = max(data$SpecDownload), y = yCeiling, pos = 4, cex=.7, xpd = T,
+       labels = createText(c('max', "specification", max(data$SpecDownload))))
+  text(x = 0, y = yCeiling, pos = 4, cex = .7, xpd = T,
+       labels = createText(c("number of","measurements",length(data$Download))))
+}
+
+viewUpload <- function(data){
+  xScale <- c(0,2)
+  xBreaks <- seq(0,2, by=0.02)
+  b <- hist(data$Upload, breaks = xBreaks)
+  yCeiling <- ceiling(max(b$counts)/10)*10
+  yScale <- c(0,yCeiling)
+  # plot 
+  plot(b, xlim = xScale, ylim = yScale, main='', col='magenta',
+       axes=FALSE, xlab="", ylab="", border='white')
+  
+  # yAxis
+  axis(2, las=1, cex.axis=0.8, lwd.ticks=0.5, col.ticks='black', lwd=0, tck=-0.025,
+     at= seq(from = 0, to = yCeiling, by = 10))
+  mtext('count', side=2, line=2, adj=1, cex=.8)
+  
+  # xAxis
+  axis(1, las=1, cex.axis=0.8, lwd.ticks=0.6, col.ticks='black', lwd = 1,
+     at=seq(from = 0, to = 2, by=.1))
+  mtext('upload speed in Mbit/s', side=1, line=2, adj=0.5, cex=.8)
+
+  lines(x = c(median(data$Upload),median(data$Upload)), 
+        y = yScale, col='red', lty=2)
+  text(x = median(data$Upload), y = yCeiling, pos = 2, cex=.7 ,xpd = T,
+       labels = createText(c(' ','median', median(data$Upload))))
+  lines(x = c(max(data$SpecUpload), max(data$SpecUpload)), 
+        y = yScale, col='blue', lty=2)
+  text(x = max(data$SpecUpload), y = yCeiling, pos = 4, cex=.7, xpd = T,
+       labels = createText(c('max', "specification", max(data$SpecUpload))))
+  text(x = 0, y = yCeiling, pos = 4, cex = .7, xpd = T,
+       labels = createText(c("number of","measurements",length(data$Upload))))
+}
+```
+generate Graphs
+```{r}
+viewDownload(dsl)
+viewUpload(dsl[dsl$Upload<2,])
+```
+
