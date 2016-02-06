@@ -28,78 +28,98 @@ createText <- function(txt){
   if(is.vector(txt)){return(paste0(txt, collapse='\n'))}
   else {return('text missing')}}
 
-viewDownload <- function(data){
-  xScale <- c(0,20)
-  xBreaks <- seq(0,20, by=0.2)
-  b <- hist(data$Download, breaks = xBreaks)
-  yCeiling <- ceiling(max(b$counts)/10)*10
-  yScale <- c(0,yCeiling)
+createRawHist <- function(dataVector, graphLimit, bucketSize){
+  return(hist(dataVector, breaks = seq(0, graphLimit, by=bucketSize)))
+}
+
+createGraph <- function(xScale, yScale, xStep, histData, labelXaxis) {
   # plot 
-  plot(b, xlim = xScale, ylim = yScale, main='', col='magenta',
+  plot(histData, xlim = xScale, ylim = yScale, main='', col='magenta',
        axes=FALSE, xlab="", ylab="", border='white')
-  
   # yAxis
   axis(2, las=1, cex.axis=0.8, lwd.ticks=0.5, col.ticks='black', lwd=0, tck=-0.025,
-     at= seq(from = 0, to = yCeiling, by = 10))
+       at= seq(from = yScale[1], to = yScale[2], by = 10))
   mtext('count', side=2, line=2, adj=1, cex=.8)
-  
   # xAxis
   axis(1, las=1, cex.axis=0.8, lwd.ticks=0.6, col.ticks='black', lwd = 1,
-     at=seq(from = 0, to = 20, by=2))
-  mtext('download speed in Mbit/s', side=1, line=2, adj=0.5, cex=.8)
+       at=seq(from = xScale[1], to = xScale[2], by= xStep))
+  mtext(labelXaxis, side=1, line=2, adj=0.5, cex=.8)
+}
+
+addNumberText <- function(dataVal, yScale) {
+  text(x = 0, y = yScale[2], pos = 4, cex = .7, xpd = T,
+       labels = createText(c("number of","measurements",dataVal)))
+}
+
+addSpec <- function(dataVal, yScale) {
+  lines(x = c(max(dataVal), max(dataVal)), 
+        y = yScale, col='blue', lty=2)
+  text(x = max(dataVal), y = yScale[2], pos = 4, cex=.7, xpd = T,
+       labels = createText(c('max', "specification", max(dataVal))))
+}
+
+viewDownload <- function(data, graphLimit, bucketSize){
+  histData <- createRawHist(data$Download, graphLimit, bucketSize)
+  xScale <- c(0,graphLimit)
+  yScale <- c(0, ceiling(max(histData$counts)/10)*10)
+  createGraph(xScale, yScale, xStep = 2, histData, 
+              labelXaxis = 'download speed in Mbit/s')
   
   # Median and max
   lines(x = c(max(data$Download),max(data$Download)), 
         y = yScale, col='red', lty=2)
-  text(x = max(data$Download),y = yCeiling, pos = 4, cex=.7, xpd = T, 
+  text(x = max(data$Download),y = yScale[2], pos = 4, cex=.7, xpd = T, 
        labels = createText(c(' ','max',max(data$Download))))
   lines(x = c(median(data$Download),median(data$Download)), 
         y = yScale, col='red', lty=2)
-  text(x = median(data$Download), y = yCeiling, pos = 4, cex=.7 ,xpd = T,
+  text(x = median(data$Download), y = yScale[2], pos = 4, cex=.7 ,xpd = T,
        labels = createText(c(' ','median', median(data$Download))))
-  lines(x = c(max(data$SpecDownload), max(data$SpecDownload)), 
-        y = yScale, col='blue', lty=2)
-  text(x = max(data$SpecDownload), y = yCeiling, pos = 4, cex=.7, xpd = T,
-       labels = createText(c('max', "specification", max(data$SpecDownload))))
-  text(x = 0, y = yCeiling, pos = 4, cex = .7, xpd = T,
-       labels = createText(c("number of","measurements",length(data$Download))))
+
+  addSpec(max(data$SpecDownload),yScale)
+  addNumberText(length(data$Download),yScale)
 }
 
-viewUpload <- function(data){
-  xScale <- c(0,2)
-  xBreaks <- seq(0,2, by=0.02)
-  b <- hist(data$Upload, breaks = xBreaks)
-  yCeiling <- ceiling(max(b$counts)/10)*10
-  yScale <- c(0,yCeiling)
-  # plot 
-  plot(b, xlim = xScale, ylim = yScale, main='', col='magenta',
-       axes=FALSE, xlab="", ylab="", border='white')
-  
-  # yAxis
-  axis(2, las=1, cex.axis=0.8, lwd.ticks=0.5, col.ticks='black', lwd=0, tck=-0.025,
-     at= seq(from = 0, to = yCeiling, by = 10))
-  mtext('count', side=2, line=2, adj=1, cex=.8)
-  
-  # xAxis
-  axis(1, las=1, cex.axis=0.8, lwd.ticks=0.6, col.ticks='black', lwd = 1,
-     at=seq(from = 0, to = 2, by=.1))
-  mtext('upload speed in Mbit/s', side=1, line=2, adj=0.5, cex=.8)
+viewUpload <- function(data, graphLimit,bucketSize){
+  histData <- createRawHist(data$Upload, graphLimit, bucketSize)
+  xScale <- c(0, graphLimit)
+  yScale <- c(0, ceiling(max(histData$counts)/10)*10)
+  createGraph(xScale, yScale, xStep = 0.1, histData, 
+              labelXaxis = 'upload speed in Mbit/s')
 
   lines(x = c(median(data$Upload),median(data$Upload)), 
         y = yScale, col='red', lty=2)
-  text(x = median(data$Upload), y = yCeiling, pos = 2, cex=.7 ,xpd = T,
+  text(x = median(data$Upload), y = yScale[2], pos = 2, cex=.7 ,xpd = T,
        labels = createText(c(' ','median', median(data$Upload))))
   lines(x = c(max(data$SpecUpload), max(data$SpecUpload)), 
         y = yScale, col='blue', lty=2)
-  text(x = max(data$SpecUpload), y = yCeiling, pos = 4, cex=.7, xpd = T,
+  text(x = max(data$SpecUpload), y = yScale[2], pos = 4, cex=.7, xpd = T,
        labels = createText(c('max', "specification", max(data$SpecUpload))))
-  text(x = 0, y = yCeiling, pos = 4, cex = .7, xpd = T,
+  text(x = 0, y = yScale[2], pos = 4, cex = .7, xpd = T,
        labels = createText(c("number of","measurements",length(data$Upload))))
+}
+
+viewPing <- function(data, graphLimit,bucketSize){
+  histData <- createRawHist(data$Ping, graphLimit, bucketSize)
+  xScale <- c(0, graphLimit)
+  yScale <- c(0, ceiling(max(histData$counts)/10)*10)
+  createGraph(xScale, yScale, xStep = 10, histData, 
+              labelXaxis = 'upload speed in Mbit/s')
+
+  lines(x = c(median(data$Ping),median(data$Ping)), 
+        y = yScale, col='red', lty=2)
+  text(x = median(data$Ping), y = yScale[2], pos = 4, cex=.7 ,xpd = T,
+       labels = createText(c(' ','median', median(data$Ping))))
+  text(x = 0, y = yScale[2], pos = 4, cex = .7, xpd = T,
+       labels = createText(c("number of","measurements",length(data$Ping))))
 }
 ```
 generate Graphs
 ```{r}
-viewDownload(dsl)
-viewUpload(dsl[dsl$Upload<2,])
+pingGraphLimit <- 100
+viewPing(dsl[dsl$Ping<pingGraphLimit,], pingGraphLimit, bucketSize=2)
+downloadGraphLimit <- 20
+viewDownload(dsl, downloadGraphLimit, bucketSize=0.2)
+uploadGraphLimit <- 1.5
+viewUpload(dsl[dsl$Upload<uploadGraphLimit,], uploadGraphLimit, bucketSize=.02)
 ```
 
